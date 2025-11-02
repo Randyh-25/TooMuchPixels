@@ -5,6 +5,17 @@ from settings import WIDTH, HEIGHT, WHITE, BLACK, FONT_PATH
 from utils import load_game_data 
 from settings import load_font 
 
+def get_ui_scale(base_width=1366, base_height=768):
+    """Return a UI scale factor based on current window size vs. a base resolution."""
+    try:
+        surface = pygame.display.get_surface()
+        if not surface:
+            return 1.0
+        w, h = surface.get_size()
+        return min(w / base_width, h / base_height)
+    except Exception:
+        return 1.0
+
 def render_text_with_border(font, text, text_color, border_color):
     text_surface = font.render(text, True, text_color)
     final_surface = pygame.Surface((text_surface.get_width() + 2, text_surface.get_height() + 2), pygame.SRCALPHA)
@@ -21,16 +32,18 @@ class HealthBar:
         self.box = pygame.image.load("assets/UI/profile/health-bar-box.png").convert_alpha()
         self.bar = pygame.image.load("assets/UI/profile/health-bar.png").convert_alpha()
         
-        self.box_width = 192
-        self.box_height = 30
+        scale = get_ui_scale()
+        
+        self.box_width = int(192 * scale)
+        self.box_height = int(30 * scale)
         self.box = pygame.transform.scale(self.box, (self.box_width, self.box_height))
         
-        self.bar_width = 156
-        self.bar_height = 20
+        self.bar_width = int(156 * scale)
+        self.bar_height = int(20 * scale)
         self.bar = pygame.transform.scale(self.bar, (self.bar_width, self.bar_height))
         
-        self.x = 10
-        self.y = 10
+        self.x = int(10 * scale)
+        self.y = int(10 * scale)
         
         self.bar_x_offset = (self.box_width - self.bar_width) // 2
         self.bar_y_offset = (self.box_height - self.bar_height) // 2
@@ -53,14 +66,16 @@ class MoneyDisplay:
     def __init__(self):
         self.icon = pygame.image.load("assets/UI/level/money.png").convert_alpha()
         
-        self.icon_width = 32
-        self.icon_height = 32
+        scale = get_ui_scale()
+        
+        self.icon_width = int(32 * scale)
+        self.icon_height = int(32 * scale)
         self.icon = pygame.transform.scale(self.icon, (self.icon_width, self.icon_height))
         
-        self.x = 10
-        self.y = 45
+        self.x = int(10 * scale)
+        self.y = int(45 * scale)
         
-        self.font = load_font(32)
+        self.font = load_font(max(16, int(32 * scale)))
         
     def draw(self, screen, player_session_money):
         screen.blit(self.icon, (self.x, self.y))
@@ -601,8 +616,7 @@ class DevilShop:
                 purchase_font = load_font(24)
                 purchase_text = purchase_font.render(self.purchase_message, True, (255, 215, 0))
                 purchase_rect = purchase_text.get_rect(center=(self.shop_rect.centerx, self.shop_rect.bottom + 30))
-                screen.blit(purchase_text, purchase_rect)
-                
+                surface.blit(purchase_text, purchase_rect)
                 # Update timer
                 self.purchase_message_timer -= 1/60  # Assuming 60 FPS
                 if self.purchase_message_timer <= 0:
@@ -614,7 +628,7 @@ class DevilShop:
                 indicator_font = load_font(28)
                 indicator_text = indicator_font.render(f"Player {self.active_player_id} is shopping", True, (200, 255, 200))
                 indicator_rect = indicator_text.get_rect(center=(self.shop_rect.centerx, self.shop_rect.top - 30))
-                screen.blit(indicator_text, indicator_rect)
+                surface.blit(indicator_text, indicator_rect)
                 
                 # Update timer
                 self.active_indicator_timer -= 1/60  # Assuming 60 FPS
@@ -755,8 +769,9 @@ class SkillBar:
         self.skill_border = pygame.image.load("assets/UI/skill/skillborder.png").convert_alpha()
         self.skill_empty = pygame.image.load("assets/UI/skill/skillempty.png").convert_alpha()
         
-        # Set dimensions for skill slot
-        self.slot_size = 64
+        # Set dimensions for skill slot (responsive)
+        ui_scale = get_ui_scale()
+        self.slot_size = max(40, int(64 * ui_scale))
         self.skill_border = pygame.transform.scale(self.skill_border, (self.slot_size, self.slot_size))
         self.skill_empty = pygame.transform.scale(self.skill_empty, (self.slot_size, self.slot_size))
         
@@ -765,12 +780,14 @@ class SkillBar:
         self.position = position    # "left" or "right"
         self.mode = mode            # "solo" or "coop"
         
-        # Position calculation - will be set based on adjustments
+        # Position calculation - will be set based on adjustments (use live screen size)
         self.x = 0
-        self.y = HEIGHT - 120  # Default vertical position above XP bar
+        surf = pygame.display.get_surface()
+        live_h = surf.get_height() if surf else HEIGHT
+        self.y = live_h - int(120 * ui_scale)  # Default vertical position above XP bar
         
         # Add font initialization here
-        self.font = load_font(20)  # Add this line to initialize the font
+        self.font = load_font(max(12, int(20 * ui_scale)))  # Initialize the font responsively
         
         # Add missing attribute
         self.effect_duration = 0.5  # Duration in seconds for activation effect
@@ -794,19 +811,25 @@ class SkillBar:
         # Max cooldown time
         self.max_cooldown = 5.0  # 5 seconds cooldown by default
         
-        # Set the initial position
+        # Set the initial position using live screen size
         self.adjust_position()
         
-    def adjust_position(self, is_split_screen=False, screen_width=WIDTH):
+    def adjust_position(self, is_split_screen=False, screen_width=None):
         """Position the skill slots appropriately"""
         padding = 10
+        # Use live screen size if not provided
+        surf = pygame.display.get_surface()
+        live_w = surf.get_width() if surf else WIDTH
+        live_h = surf.get_height() if surf else HEIGHT
+        if screen_width is None:
+            screen_width = live_w
         
         if self.mode == "solo":
             # Center the 3 skills in solo mode above the XP bar
             total_width = (self.slot_size * 3) + (padding * 2)
-            start_x = (WIDTH - total_width) // 2
-            self.start_x = start_x
-            self.y = HEIGHT - 120  # Position above XP bar
+            self.start_x = (screen_width - total_width) // 2
+            # Position above XP bar using live height
+            self.y = live_h - max(80, int(120 * get_ui_scale()))
         else:
             # In coop mode, position next to minimap
             minimap_size = 150  # Same as MiniMap width
@@ -816,30 +839,35 @@ class SkillBar:
                 if self.player_id == 1:
                     # Player 1 (left side): Position to the right of the minimap
                     self.x = minimap_size + padding * 2
-                    self.y = HEIGHT - minimap_size // 2 - self.slot_size // 2 - 50
+                    self.y = live_h - minimap_size // 2 - self.slot_size // 2 - 50
                 else:
                     # Player 2 (right side): Position to the right of the minimap
                     self.x = screen_width // 2 + minimap_size + padding * 2
-                    self.y = HEIGHT - minimap_size // 2 - self.slot_size // 2 - 50
+                    self.y = live_h - minimap_size // 2 - self.slot_size // 2 - 50
             else:
                 # In regular mode, position both skills next to their respective minimaps
                 if self.player_id == 1:
                     # Player 1: To the right of left minimap
                     self.x = minimap_size + padding * 2
-                    self.y = HEIGHT - minimap_size // 2 - self.slot_size // 2 - 50
+                    self.y = live_h - minimap_size // 2 - self.slot_size // 2 - 50
                 else:
                     # Player 2: To the left of right minimap
-                    self.x = WIDTH - minimap_size - padding * 2 - self.slot_size
-                    self.y = HEIGHT - minimap_size // 2 - self.slot_size // 2 - 50
+                    self.x = screen_width - minimap_size - padding * 2 - self.slot_size
+                    self.y = live_h - minimap_size // 2 - self.slot_size // 2 - 50
         
     def draw(self, screen):
         current_time = pygame.time.get_ticks() / 1000  # Convert to seconds
         
         # Different drawing logic for solo vs coop
         if self.mode == "solo":
-            # Draw three skill slots for solo mode
+            # Draw three skill slots for solo mode, centered dynamically to current width
+            surf = pygame.display.get_surface()
+            sw = surf.get_width() if surf else WIDTH
+            padding = 10
+            total_width = (self.slot_size * 3) + (padding * 2)
+            start_x = (sw - total_width) // 2
             for i in range(3):
-                x = self.start_x + (i * (self.slot_size + 10))
+                x = start_x + (i * (self.slot_size + 10))
                 
                 # Draw empty skill background
                 screen.blit(self.skill_empty, (x, self.y))

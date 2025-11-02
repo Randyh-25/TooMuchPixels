@@ -10,11 +10,54 @@ import solo
 import coop
 import math
 import random
+import os
 from player_animations import PlayerAnimations
 
 pygame.init()
-screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN) # membuat jendela layar penuh dengan ukuran tertentu 
-pygame.display.set_caption("Too Much Pixels") # menetapkan judul 
+
+# Centralized display management to avoid crashes when toggling resolution/fullscreen
+def _safe_set_mode(size, flags=0):
+    """Safely call set_mode and return the new screen surface. Fallback to 1280x720 on failure."""
+    try:
+        scr = pygame.display.set_mode(size, flags)
+        return scr
+    except Exception as e:
+        # Fallback to a safe windowed resolution
+        try:
+            scr = pygame.display.set_mode((1280, 720), pygame.RESIZABLE)
+            return scr
+        except Exception:
+            raise e
+
+def _get_desktop_resolution():
+    info = pygame.display.Info()
+    return (info.current_w, info.current_h)
+
+# Load and set window icon (scaled) – responsive to platform expectations
+def _set_window_icon():
+    icon_candidates = [
+        os.path.join('assets', 'UI', 'logo.png'),
+        os.path.join('assets', 'UI', 'btn', 'play.png'),
+    ]
+    for path in icon_candidates:
+        if os.path.exists(path):
+            try:
+                icon = pygame.image.load(path).convert_alpha()
+                # Scale to a typical icon size
+                icon_size = 48
+                icon = pygame.transform.smoothscale(icon, (icon_size, icon_size))
+                pygame.display.set_icon(icon)
+                break
+            except Exception:
+                continue
+
+# Initialize display (windowed-only)
+screen = _safe_set_mode(CURRENT_RESOLUTION, pygame.RESIZABLE)
+WIDTH, HEIGHT = screen.get_size()
+
+pygame.display.set_caption("Too Much Pixels") # menetapkan judul
+_set_window_icon()
+
 clock = pygame.time.Clock() # membuat objek clock untuk mengatur frame rate
 sound_manager = SoundManager() # inisialisasi manajer suara
 
@@ -78,6 +121,30 @@ class MenuParticleSystem:
 # membuat latar belakang menu menggunakan partikel
 particle_system = MenuParticleSystem(WIDTH, HEIGHT) # inisialisasi sistem partikel untuk ukuran layar
 menu_background = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA) # surface transparan untuk latar menu
+
+# Helper to apply windowed resolution changes consistently
+def apply_display_changes(new_resolution=None):
+    """
+    Apply windowed display changes safely, update global screen, WIDTH/HEIGHT, and dependent surfaces.
+    - new_resolution: (w,h) or None
+    Returns: None
+    """
+    global screen, WIDTH, HEIGHT, CURRENT_RESOLUTION, particle_system, menu_background
+
+    flags = pygame.RESIZABLE
+    if new_resolution is not None:
+        CURRENT_RESOLUTION = new_resolution
+    target_size = CURRENT_RESOLUTION
+
+    screen = _safe_set_mode(target_size, flags)
+    WIDTH, HEIGHT = screen.get_size()
+
+    # Update dependent surfaces and systems
+    if hasattr(particle_system, 'width'):
+        particle_system.width = WIDTH
+    if hasattr(particle_system, 'height'):
+        particle_system.height = HEIGHT
+    menu_background = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
 
 # mesin suara kustom untuk pygame_menu dengan feedback suara yang disesuaikan
 class SoundEngine(pygame_menu.sound.Sound):
@@ -327,33 +394,18 @@ def start_game(mode):
 
 def settings_menu():
     # buat menu bertema dengan judul "settings"
-    menu = create_themed_menu(
-        'Settings', 
-        min(WIDTH, pygame.display.get_surface().get_width()),
-        min(HEIGHT, pygame.display.get_surface().get_height())
-    )
-
-    # dungsi untuk toggle fullscreen saat dipilih di menu
-    def toggle_fullscreen(value):
-        global FULLSCREEN
-        sound_manager.play_ui_click()
-        FULLSCREEN = value
-        if value: # jika pengguna mengaktifkan fullscreen
-            pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
-            resolution_selector.hide()
-        else: # jika fullscreen dimatikan
-            pygame.display.set_mode(CURRENT_RESOLUTION)
-            resolution_selector.show()
+    sw, sh = pygame.display.get_surface().get_size()
+    menu = create_themed_menu('Settings', sw, sh)
 
     def change_resolution(_, res):
         global CURRENT_RESOLUTION
         sound_manager.play_ui_click()
-        if not FULLSCREEN:
-            CURRENT_RESOLUTION = res
-            pygame.display.set_mode(res)
-            # menyesuaikan ukuran menu agar sesuai dengan resolusi layar baru
-            menu.resize(min(res[0], pygame.display.get_surface().get_width()),
-                       min(res[1], pygame.display.get_surface().get_height()))
+        apply_display_changes(new_resolution=res)
+        # menyesuaikan ukuran menu agar sesuai dengan resolusi layar baru
+        try:
+            menu.resize(WIDTH, HEIGHT)
+        except Exception:
+            pass
 
     def change_volume(value): # mengubah volume suara dari slider
         global VOLUME
@@ -363,13 +415,9 @@ def settings_menu():
     # Section titles with decorative elements
     menu.add.label('• DISPLAY SETTINGS •', font_size=28, font_color=(255, 215, 0))
     menu.add.vertical_margin(10)
-    resolution_selector = menu.add.selector('Resolution: ', RESOLUTIONS, onchange=change_resolution,
+    resolution_selector = menu.add.selector('Windowed Resolution: ', RESOLUTIONS, onchange=change_resolution,
                                          font_size=28, selection_color=(255, 255, 150))
-    if FULLSCREEN:
-        resolution_selector.hide()
-    
-    menu.add.toggle_switch('Fullscreen: ', FULLSCREEN, onchange=toggle_fullscreen,
-                        font_size=28, selection_color=(255, 255, 150))
+    # Fullscreen is disabled; no toggle
     
     menu.add.vertical_margin(30)
     menu.add.label('• AUDIO SETTINGS •', font_size=28, font_color=(255, 215, 0))
@@ -394,6 +442,7 @@ def settings_menu():
         # Update menu with the background
         events = pygame.event.get()
         menu.update(events)
+        screen.blit(menu_background, (0, 0))
         menu.draw(screen)
         
         pygame.display.flip()
@@ -407,20 +456,23 @@ def quit_confirmation():
                  font_color=(255, 255, 255), margin=(0, 30))
     menu.add.vertical_margin(20)
     
-    # Create a more appealing button layout
-    button_layout = menu.add.frame_h(500, 80)
+    # Create a more appealing button layout (relaxed to avoid size exceptions)
+    button_layout = menu.add.frame_h(500, 120)
+    button_layout._relax = True  # allow content to exceed frame constraints
     button_layout.pack(menu.add.button('Yes', pygame.quit, 
                                     font_size=36, 
                                     background_color=(170, 50, 50),
                                     border_width=2,
-                                    border_color=(255, 150, 150)), 
+                                    border_color=(255, 150, 150),
+                                    margin=(0, 0)), 
                     align=pygame_menu.locals.ALIGN_CENTER)
                     
     button_layout.pack(menu.add.button('No', main_menu, 
                                     font_size=36,
                                     background_color=(50, 170, 50),
                                     border_width=2,
-                                    border_color=(150, 255, 150)), 
+                                    border_color=(150, 255, 150),
+                                    margin=(0, 0)), 
                     align=pygame_menu.locals.ALIGN_CENTER)
     
     # Create dynamic background with particles during menu loop
@@ -432,6 +484,7 @@ def quit_confirmation():
         
         events = pygame.event.get()
         menu.update(events)
+        screen.blit(menu_background, (0, 0))
         menu.draw(screen)
         
         pygame.display.flip()
@@ -463,11 +516,8 @@ def draw_player_menu_animation(surface, solo_hover, coop_hover, frame_idx):
 def main_menu():
     sound_manager.play_menu_music()
     
-    menu = create_themed_menu(
-        ' ', 
-        min(WIDTH, pygame.display.get_surface().get_width()),
-        min(HEIGHT, pygame.display.get_surface().get_height())
-    )
+    sw, sh = pygame.display.get_surface().get_size()
+    menu = create_themed_menu(' ', sw, sh)
     
     saved_money, highest_score, player_name = load_game_data()
     
@@ -519,13 +569,15 @@ def main_menu():
         
         events = pygame.event.get()
         menu.update(events)
+        screen.blit(menu_background, (0, 0))
         menu.draw(screen)
         
         pygame.display.flip()
         clock.tick(60)
 
 def game_mode_menu():
-    menu = create_themed_menu('SELECT GAME MODE', WIDTH, HEIGHT)
+    sw, sh = pygame.display.get_surface().get_size()
+    menu = create_themed_menu('SELECT GAME MODE', sw, sh)
     
     # Add descriptive info for each mode
     menu.add.vertical_margin(30)
@@ -621,6 +673,7 @@ def game_mode_menu():
 
         events = pygame.event.get()
         menu.update(events)
+        screen.blit(menu_background, (0, 0))
         menu.draw(screen)
 
         # Gambar animasi player di tengah
@@ -638,11 +691,8 @@ def game_mode_menu():
         clock.tick(60)
 
 def player_name_screen():
-    menu = create_themed_menu(
-        '', 
-        WIDTH, 
-        HEIGHT
-    )
+    sw, sh = pygame.display.get_surface().get_size()
+    menu = create_themed_menu('', sw, sh)
     
     player_name = [""]
     
@@ -725,6 +775,7 @@ def player_name_screen():
         
         events = pygame.event.get()
         menu.update(events)
+        screen.blit(menu_background, (0, 0))
         menu.draw(screen)
         
         pygame.display.flip()

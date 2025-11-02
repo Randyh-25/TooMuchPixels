@@ -1,5 +1,5 @@
-# Ukuran default window
-WIDTH, HEIGHT = 1366, 768
+# Ukuran default window (windowed-only)
+WIDTH, HEIGHT = 1280, 720
 
 # Jumlah frame per detik (frame rate)
 FPS = 60
@@ -12,8 +12,8 @@ GREEN = (0, 255, 0)
 BLUE  = (0, 0, 255)
 YELLOW = (255, 255, 0)
 
-# Status fullscreen (True artinya layar penuh)
-FULLSCREEN = True
+# Status fullscreen dimatikan (game windowed-only)
+FULLSCREEN = False
 
 # Resolusi saat ini (mengacu ke ukuran WIDTH dan HEIGHT)
 CURRENT_RESOLUTION = (WIDTH, HEIGHT)
@@ -22,12 +22,10 @@ CURRENT_RESOLUTION = (WIDTH, HEIGHT)
 VOLUME = 50
 
 # Daftar resolusi yang tersedia untuk dipilih di pengaturan
+# Hanya dua resolusi windowed yang diizinkan
 RESOLUTIONS = [
     ('1280x720', (1280, 720)),
-    ('1366x768', (1366, 768)),
     ('1920x1080', (1920, 1080)),
-    ('2560x1440', (2560, 1440)),
-    ('3840x2160', (3840, 2160)),
 ]
 
 # Import modul pygame dan pygame_menu
@@ -55,33 +53,24 @@ def settings_menu(screen, main_menu_callback):
     """Fungsi untuk menampilkan menu pengaturan"""
     resolutions = RESOLUTIONS
 
+    # Hilangkan dukungan fullscreen; game windowed-only
     def toggle_fullscreen(value):
-        """Fungsi untuk mengaktifkan/menonaktifkan fullscreen"""
-        fullscreen[0] = value
-        if value:
-            pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
-            resolution_selector.hide()  # Sembunyikan pilihan resolusi saat fullscreen
-        else:
-            pygame.display.set_mode(current_resolution)
-            resolution_selector.show()
+        pass
 
     def change_resolution(_, res):
         """Fungsi untuk mengubah resolusi saat tidak fullscreen"""
         global current_resolution
-        if not fullscreen[0]:
-            current_resolution = res
-            pygame.display.set_mode(res)
+        current_resolution = res
+        pygame.display.set_mode(res, pygame.RESIZABLE)
 
     # Buat menu pengaturan menggunakan pygame_menu
     menu = pygame_menu.Menu('Settings', WIDTH, HEIGHT, theme=pygame_menu.themes.THEME_DARK)
     
     # Tambahkan selector untuk memilih resolusi
     resolution_selector = menu.add.selector('Resolution: ', resolutions, onchange=change_resolution)
-    if fullscreen[0]:
-        resolution_selector.hide()  # Sembunyikan jika mode fullscreen aktif
+    # Selalu tampilkan pilihan resolusi (windowed-only)
 
-    # Tambahkan toggle switch untuk fullscreen
-    menu.add.toggle_switch('Fullscreen: ', fullscreen[0], onchange=toggle_fullscreen)
+    # Hilangkan toggle fullscreen
 
     # Tambahkan slider untuk pengaturan volume
     menu.add.range_slider('Master Volume: ', default=VOLUME, range_values=(0, 100), increment=1,

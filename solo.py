@@ -85,13 +85,14 @@ def main(screen, clock, sound_manager, main_menu_callback):
     font = load_font(36)
     
     # Initialize UI elements - specify "solo" mode for skill bar
+    sw, sh = screen.get_size()
     health_bar = HealthBar()
     money_display = MoneyDisplay()
-    xp_bar = XPBar(WIDTH, HEIGHT)
+    xp_bar = XPBar(sw, sh)
     skill_bar = SkillBar(player_id=1, mode="solo")  # Using solo mode with 3 skills
     skill_bar.player = player  # Add player reference
     interaction_button = InteractionButton()
-    mini_map = MiniMap(game_map.width, game_map.height, WIDTH, HEIGHT)
+    mini_map = MiniMap(game_map.width, game_map.height, sw, sh)
     
     # Create a new sprite group for skill effects
     skill_effects = pygame.sprite.Group()
@@ -250,13 +251,13 @@ def main(screen, clock, sound_manager, main_menu_callback):
         # Cheat input handling
         if cheat_mode:
             # Draw semi-transparent overlay (benar-benar transparan, game tetap terlihat)
-            overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+            overlay = pygame.Surface((sw, sh), pygame.SRCALPHA)
             overlay.fill((0, 0, 0, 80))  # alpha 80, makin kecil makin transparan
             screen.blit(overlay, (0, 0))
 
             # Draw input box
             font_cheat = load_font(36)
-            box_rect = pygame.Rect(WIDTH//2 - 200, HEIGHT//2 - 40, 400, 80)
+            box_rect = pygame.Rect(sw//2 - 200, sh//2 - 40, 400, 80)
             pygame.draw.rect(screen, (40, 40, 40), box_rect, border_radius=8)
             pygame.draw.rect(screen, (200, 200, 200), box_rect, 2, border_radius=8)
 
@@ -266,7 +267,7 @@ def main(screen, clock, sound_manager, main_menu_callback):
             # Draw message if any, geser ke bawah kotak
             if cheat_message:
                 msg_surface = font_cheat.render(cheat_message, True, (0, 255, 0))
-                msg_rect = msg_surface.get_rect(center=(WIDTH//2, box_rect.y + box_rect.height + 30))
+                msg_rect = msg_surface.get_rect(center=(sw//2, box_rect.y + box_rect.height + 30))
                 screen.blit(msg_surface, msg_rect)
 
             pygame.display.flip()
@@ -495,7 +496,7 @@ def main(screen, clock, sound_manager, main_menu_callback):
             screen.blit(blur_surface, (0, 0))
             screen.blit(player.image, camera.apply(player))
             
-            fade_surface = pygame.Surface((WIDTH, HEIGHT))
+            fade_surface = pygame.Surface((sw, sh))
             fade_surface.fill((0, 0, 0))
             
             if animation_finished:
@@ -583,7 +584,7 @@ def main(screen, clock, sound_manager, main_menu_callback):
 
         timer_font = load_font(48)
         timer_surface = render_text_with_border(timer_font, timer_text, WHITE, BLACK)
-        timer_rect = timer_surface.get_rect(center=(WIDTH // 2, 40))
+        timer_rect = timer_surface.get_rect(center=(sw // 2, 40))
         screen.blit(timer_surface, timer_rect)
         # --- END SESSION TIMER ---
 
@@ -635,8 +636,8 @@ def main(screen, clock, sound_manager, main_menu_callback):
                 # Draw devil indicator when far away
                 if distance > 300:
                     angle = math.atan2(dy, dx)
-                    arrow_x = WIDTH//2 + math.cos(angle)*180
-                    arrow_y = HEIGHT//2 + math.sin(angle)*180
+                    arrow_x = sw//2 + math.cos(angle)*180
+                    arrow_y = sh//2 + math.sin(angle)*180
                     pygame.draw.polygon(screen, (255,0,0), [
                         (arrow_x, arrow_y),
                         (arrow_x - 10*math.sin(angle), arrow_y + 10*math.cos(angle)),
@@ -655,7 +656,7 @@ def main(screen, clock, sound_manager, main_menu_callback):
         if devil_notif_show and pygame.time.get_ticks() - devil_notif_timer < 2500:
             notif_font = load_font(36)
             notif = notif_font.render("The Devil want to speak with you!", True, (255,50,50))
-            notif_rect = notif.get_rect(center=(WIDTH//2, HEIGHT//2-120))
+            notif_rect = notif.get_rect(center=(sw//2, sh//2-120))
             screen.blit(notif, notif_rect)
         else:
             devil_notif_show = False
@@ -703,7 +704,7 @@ def main(screen, clock, sound_manager, main_menu_callback):
             if elapsed_time < 3000:  # Show for 3 seconds
                 warning_font = load_font(48)
                 warning_text = warning_font.render("BOSS APPROACHING!", True, (255, 0, 0))
-                warning_rect = warning_text.get_rect(center=(WIDTH // 2, HEIGHT // 3))
+                warning_rect = warning_text.get_rect(center=(sw // 2, sh // 3))
                 
                 # Add pulsing effect
                 pulse = math.sin(current_time * 0.01) * 10 + 255
@@ -722,11 +723,9 @@ def main(screen, clock, sound_manager, main_menu_callback):
     return
 
 # Contoh di solo.py atau coop.py
-def handle_pause():
-    quit_to_menu = pause_menu(screen, sound_manager)
+def handle_pause(screen):
+    """Helper to invoke pause menu; returns True if should quit to main menu."""
+    quit_to_menu = pause_menu(screen)
     if quit_to_menu:
-        # Kembali ke menu utama
         return True
-    else:
-        # Lanjutkan game
-        return False
+    return False

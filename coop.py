@@ -7,9 +7,9 @@ from player import Player, Camera
 from enemy import Enemy
 from projectile import Projectile
 from experience import Experience, LevelUpEffect
-from utils import pause_menu, splitscreen_game_over
+from utils import pause_menu, splitscreen_game_over, show_victory_screen
 from maps import Map
-from ui import HealthBar, MoneyDisplay, XPBar, SplitScreenUI, InteractionButton, render_text_with_border, SkillBar, MiniMap
+from ui import HealthBar, MoneyDisplay, XPBar, SplitScreenUI, InteractionButton, render_text_with_border, SkillBar, MiniMap, DevilShop
 from settings import load_font
 from particles import ParticleSystem
 from partner import Partner
@@ -86,8 +86,8 @@ class CoopUIManager:
         
     def set_map_dimensions(self, map_width, map_height):
         """Update map dimensions for minimaps"""
-        self.mini_map1.update_dimensions(map_width, map_height)
-        self.mini_map2.update_dimensions(map_width, map_height)
+        self.mini_map1.update_map_size(map_width, map_height)
+        self.mini_map2.update_map_size(map_width, map_height)
     
     def set_players(self, player1, player2):
         """Set player references for skill bars"""
@@ -239,8 +239,8 @@ class CoopUIManager:
         
     def set_map_dimensions(self, map_width, map_height):
         """Update map dimensions for minimaps"""
-        self.mini_map1.update_dimensions(map_width, map_height)
-        self.mini_map2.update_dimensions(map_width, map_height)
+        self.mini_map1.update_map_size(map_width, map_height)
+        self.mini_map2.update_map_size(map_width, map_height)
     
     def set_players(self, player1, player2):
         """Set player references for skill bars"""
@@ -392,8 +392,8 @@ class CoopUIManager:
         
     def set_map_dimensions(self, map_width, map_height):
         """Update map dimensions for minimaps"""
-        self.mini_map1.update_dimensions(map_width, map_height)
-        self.mini_map2.update_dimensions(map_width, map_height)
+        self.mini_map1.update_map_size(map_width, map_height)
+        self.mini_map2.update_map_size(map_width, map_height)
     
     def set_players(self, player1, player2):
         """Set player references for skill bars"""
@@ -540,7 +540,10 @@ def split_screen_main(screen, clock, sound_manager, main_menu_callback):
 
     # Define the draw_game function - remove devil-related code from it
     def draw_game(viewport, offset_x=0, player_filter=None):
-        viewport_surface = screen.subsurface(viewport)
+        # Clamp viewport to current screen rect to avoid subsurface errors
+        screen_rect = screen.get_rect()
+        safe_view = viewport.clip(screen_rect)
+        viewport_surface = screen.subsurface(safe_view)
         
         # Tentukan kamera yang tepat berdasarkan viewport
         cam_x = camera.x
@@ -628,7 +631,8 @@ def split_screen_main(screen, clock, sound_manager, main_menu_callback):
 
     # Define victory transition function - keep as is
     def victory_transition(surface):
-        fade_surface = pygame.Surface((WIDTH, HEIGHT))
+        sw, sh = screen.get_size()
+        fade_surface = pygame.Surface((sw, sh))
         fade_surface.fill((255, 255, 255))  # White flash for victory
         
         for alpha in range(0, 255, 5):
@@ -707,7 +711,8 @@ def split_screen_main(screen, clock, sound_manager, main_menu_callback):
     last_second = 0
     
     # Initialize split screen UI
-    ui = SplitScreenUI(WIDTH, HEIGHT)
+    sw, sh = screen.get_size()
+    ui = SplitScreenUI(sw, sh)
     
     death_transition = False
     death_alpha = 0
@@ -716,7 +721,7 @@ def split_screen_main(screen, clock, sound_manager, main_menu_callback):
     TRANSITION_DELAY = 5
     transition_timer = 0
     
-    particle_system = ParticleSystem(WIDTH, HEIGHT)
+    particle_system = ParticleSystem(sw, sh)
     
     # Remove devil-related variables
 
@@ -731,8 +736,8 @@ def split_screen_main(screen, clock, sound_manager, main_menu_callback):
     # Remove interaction button and shop initialization
     
     # Initialize mini maps for both players
-    mini_map1 = MiniMap(game_map.width, game_map.height, WIDTH, HEIGHT, player_id=1, position="left")
-    mini_map2 = MiniMap(game_map.width, game_map.height, WIDTH, HEIGHT, player_id=2, position="right")
+    mini_map1 = MiniMap(game_map.width, game_map.height, sw, sh, player_id=1, position="left")
+    mini_map2 = MiniMap(game_map.width, game_map.height, sw, sh, player_id=2, position="right")
     
     # Initialize skill bars for both players - each with one skill in coop mode
     skill_bar1 = SkillBar(player_id=1, position="left", mode="coop")
@@ -854,13 +859,14 @@ def split_screen_main(screen, clock, sound_manager, main_menu_callback):
         # Cheat input handling
         if cheat_mode:
             # Draw semi-transparent overlay (benar-benar transparan, game tetap terlihat)
-            overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+            sw, sh = screen.get_size()
+            overlay = pygame.Surface((sw, sh), pygame.SRCALPHA)
             overlay.fill((0, 0, 0, 80))  # alpha 80, makin kecil makin transparan
             screen.blit(overlay, (0, 0))
 
             # Draw input box
             font_cheat = load_font(36)
-            box_rect = pygame.Rect(WIDTH//2 - 200, HEIGHT//2 - 40, 400, 80)
+            box_rect = pygame.Rect(sw//2 - 200, sh//2 - 40, 400, 80)
             pygame.draw.rect(screen, (40, 40, 40), box_rect, border_radius=8)
             pygame.draw.rect(screen, (200, 200, 200), box_rect, 2, border_radius=8)
 
@@ -870,7 +876,7 @@ def split_screen_main(screen, clock, sound_manager, main_menu_callback):
             # Draw message if any, geser ke bawah kotak
             if cheat_message:
                 msg_surface = font_cheat.render(cheat_message, True, (0, 255, 0))
-                msg_rect = msg_surface.get_rect(center=(WIDTH//2, box_rect.y + box_rect.height + 30))
+                msg_rect = msg_surface.get_rect(center=(sw//2, box_rect.y + box_rect.height + 30))
                 screen.blit(msg_surface, msg_rect)
 
             pygame.display.flip()
@@ -1216,31 +1222,33 @@ def split_screen_main(screen, clock, sound_manager, main_menu_callback):
 
         # Draw everything
         if camera.split_mode:
+            sw, sh = screen.get_size()
             # Draw more visible divider between viewports
             divider_width = 4  # Lebar garis pemisah (4 pixel)
-            divider_rect = pygame.Rect(WIDTH//2 - divider_width//2, 0, divider_width, HEIGHT)
+            divider_rect = pygame.Rect(sw//2 - divider_width//2, 0, divider_width, sh)
             pygame.draw.rect(screen, (255, 215, 0), divider_rect)  # Warna kuning emas untuk visibilitas
             
             # Optional: Tambahkan shadow effect untuk kedalaman
             shadow_width = 2
             pygame.draw.rect(screen, (100, 100, 100, 128), 
-                            pygame.Rect(WIDTH//2 - divider_width//2 - shadow_width, 0, shadow_width, HEIGHT))
+                            pygame.Rect(sw//2 - divider_width//2 - shadow_width, 0, shadow_width, sh))
             pygame.draw.rect(screen, (100, 100, 100, 128), 
-                            pygame.Rect(WIDTH//2 + divider_width//2, 0, shadow_width, HEIGHT))
+                            pygame.Rect(sw//2 + divider_width//2, 0, shadow_width, sh))
             
             # Draw left viewport (Player 1)
-            left_viewport = pygame.Rect(0, 0, WIDTH//2 - divider_width//2, HEIGHT)
+            left_viewport = pygame.Rect(0, 0, sw//2 - divider_width//2, sh)
             draw_game(left_viewport, 0, 1)  # Draw with player 1 filter
             
             # Right viewport (Player 2)
-            right_viewport = pygame.Rect(WIDTH//2 + divider_width//2, 0, WIDTH//2 - divider_width//2, HEIGHT)
-            draw_game(right_viewport, WIDTH//2, 2)  # Draw with player 2 filter
+            right_viewport = pygame.Rect(sw//2 + divider_width//2, 0, sw//2 - divider_width//2, sh)
+            draw_game(right_viewport, sw//2, 2)  # Draw with player 2 filter
             
             # Draw UI for both players
             ui.draw_split(screen, player1, player2, True)
         else:
             # Normal single screen drawing
-            full_viewport = pygame.Rect(0, 0, WIDTH, HEIGHT)
+            sw, sh = screen.get_size()
+            full_viewport = pygame.Rect(0, 0, sw, sh)
             draw_game(full_viewport)
             ui.draw(screen, player1, player2)
 
@@ -1253,27 +1261,28 @@ def split_screen_main(screen, clock, sound_manager, main_menu_callback):
 
         timer_font = load_font(48)
         timer_surface = render_text_with_border(timer_font, timer_text, WHITE, BLACK)
-        timer_rect = timer_surface.get_rect(center=(WIDTH // 2, 40))
+        sw, sh = screen.get_size()
+        timer_rect = timer_surface.get_rect(center=(sw // 2, 40))
         screen.blit(timer_surface, timer_rect)
 
         # Remove devil-related code
                 
         # Update minimaps and skill positions based on split screen mode
-        mini_map1.adjust_for_split_screen(camera.split_mode, WIDTH//2)
-        mini_map2.adjust_for_split_screen(camera.split_mode, WIDTH//2)
-        skill_bar1.adjust_position(camera.split_mode, WIDTH)
-        skill_bar2.adjust_position(camera.split_mode, WIDTH)
+        mini_map1.adjust_for_split_screen(camera.split_mode, sw//2)
+        mini_map2.adjust_for_split_screen(camera.split_mode, sw//2)
+        skill_bar1.adjust_position(camera.split_mode, sw)
+        skill_bar2.adjust_position(camera.split_mode, sw)
         
         # Draw UI elements
         if camera.split_mode:
             # For split screen mode
             # Left half (player 1)
-            left_viewport = pygame.Rect(0, 0, WIDTH//2 - divider_width//2, HEIGHT)
+            left_viewport = pygame.Rect(0, 0, sw//2 - divider_width//2, sh)
             mini_map1.draw(screen, player1, player2, enemies, None, boss)  # Pass None for devil
             skill_bar1.draw(screen)
             
             # Right half (player 2)
-            right_viewport = pygame.Rect(WIDTH//2 + divider_width//2, 0, WIDTH//2 - divider_width//2, HEIGHT)
+            right_viewport = pygame.Rect(sw//2 + divider_width//2, 0, sw//2 - divider_width//2, sh)
             mini_map2.draw(screen, player2, player1, enemies, None, boss)  # Pass None for devil
             skill_bar2.draw(screen)
         else:
@@ -1314,7 +1323,7 @@ def split_screen_main(screen, clock, sound_manager, main_menu_callback):
             if elapsed_time < 3000:  # Show for 3 seconds
                 warning_font = load_font(48)
                 warning_text = warning_font.render("BOSS APPROACHING!", True, (255, 0, 0))
-                warning_rect = warning_text.get_rect(center=(WIDTH // 2, HEIGHT // 3))
+                warning_rect = warning_text.get_rect(center=(sw // 2, sh // 3))
                 
                 # Add pulsing effect
                 pulse = math.sin(current_time * 0.01) * 10 + 255

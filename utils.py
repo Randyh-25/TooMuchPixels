@@ -29,7 +29,7 @@ def load_game_data():
         return 0, 0, "" 
 
 def create_themed_pause_menu(screen, title):
-    """Buat themed menu untuk pause dengan gaya yang konsisten"""
+    """Buat themed menu untuk pause dengan gaya yang konsisten, mengikuti ukuran layar saat ini"""
     theme = pygame_menu.themes.THEME_DARK.copy()
     theme.widget_font = FONT_PATH
     theme.title_font = FONT_PATH
@@ -62,9 +62,14 @@ def create_themed_pause_menu(screen, title):
     theme.border_width = 2
     theme.border_color = (255, 215, 0)  # Gold border
     
-    # Create menu with the enhanced theme
-    width = min(WIDTH - 100, pygame.display.get_surface().get_width() - 100)
-    height = min(HEIGHT - 100, pygame.display.get_surface().get_height() - 100)
+    # Create menu with the enhanced theme using current surface size
+    surf = pygame.display.get_surface()
+    if surf:
+        sw, sh = surf.get_size()
+    else:
+        sw, sh = WIDTH, HEIGHT
+    width = max(300, sw - 100)
+    height = max(200, sh - 100)
     
     menu = pygame_menu.Menu(
         title, 
@@ -79,9 +84,10 @@ def create_themed_pause_menu(screen, title):
 
 def pause_menu(screen, main_menu_callback=None):
     """Menu pause dengan tema yang diperbarui"""
-    from main import create_themed_menu, sound_manager
+    from main import sound_manager
     
-    menu = create_themed_menu('GAME PAUSED', WIDTH, HEIGHT)
+    # Use responsive pause menu sized to current screen
+    menu = create_themed_pause_menu(screen, 'GAME PAUSED')
     
     # Button styling
     button_style = {
@@ -129,7 +135,9 @@ def pause_menu(screen, main_menu_callback=None):
         menu.set_sound(PauseMenuSound())
     
     # Semi-transparan blur effect untuk background
-    bg_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+    # Match overlay to current screen size
+    sw, sh = screen.get_size()
+    bg_surface = pygame.Surface((sw, sh), pygame.SRCALPHA)
     bg_surface.fill((0, 0, 0, 160))  # Semi-transparent black
     
     # Main loop untuk menu pause
@@ -142,8 +150,7 @@ def pause_menu(screen, main_menu_callback=None):
                 if event.key == pygame.K_ESCAPE:
                     menu.disable()
                     result[0] = False  # Tombol escape = resume game
-        
-        # Draw background
+        # Draw background overlay
         screen.blit(bg_surface, (0, 0))
         
         # Update dan gambar menu selama masih enabled
@@ -157,7 +164,7 @@ def pause_menu(screen, main_menu_callback=None):
     return result[0]
 
 def highest_score_menu(screen, player, main_menu_callback, replay_callback, sound_manager=None):
-    from main import create_themed_menu, sound_manager
+    from main import sound_manager as main_sound_manager
     
     # Load current saved data
     saved_money, current_highest_score, player_name = load_game_data()
@@ -173,7 +180,8 @@ def highest_score_menu(screen, player, main_menu_callback, replay_callback, soun
     else:
         save_game_data(total_money, current_highest_score, player_name)
     
-    menu = create_themed_menu('GAME OVER', WIDTH, HEIGHT)
+    # Use themed pause-style menu that adapts to current size
+    menu = create_themed_pause_menu(screen, 'GAME OVER')
     
     # Add logo if exists
     import os
@@ -247,7 +255,7 @@ def save_splitscreen_data(money=0):
         pickle.dump(game_data, file)
 
 def splitscreen_game_over(screen, player1, player2, main_menu_callback, replay_callback):
-    from main import create_themed_menu, sound_manager
+    from main import sound_manager
     
     # Calculate total session money from both players
     total_session_money = player1.session_money + player2.session_money
@@ -259,7 +267,7 @@ def splitscreen_game_over(screen, player1, player2, main_menu_callback, replay_c
     # Save updated money
     save_splitscreen_data(total_money)
     
-    menu = create_themed_menu('Game Over', WIDTH, HEIGHT)
+    menu = create_themed_pause_menu(screen, 'Game Over')
     menu.add.label(f'Player 1 Level: {player1.level}')
     menu.add.label(f'Player 2 Level: {player2.level}')
     menu.add.label(f'Session Money: {total_session_money}')
@@ -324,11 +332,12 @@ def show_victory_screen(screen, score, time_played, sound_manager=None, victory_
         sound_manager.play_victory_sound()
     
     # Tampilan victory dengan efek partikel dan transisi fade-in
+    sw, sh = screen.get_size()
     particles = []
     for _ in range(100):
         particles.append({
-            'x': random.randint(0, WIDTH),
-            'y': random.randint(0, HEIGHT),
+            'x': random.randint(0, sw),
+            'y': random.randint(0, sh),
             'size': random.randint(2, 6),
             'speed': random.uniform(1, 3),
             'color': (
@@ -340,13 +349,13 @@ def show_victory_screen(screen, score, time_played, sound_manager=None, victory_
         })
     
     # Transisi fade-in untuk layar kemenangan
-    fade_surface = pygame.Surface((WIDTH, HEIGHT))
+    fade_surface = pygame.Surface((sw, sh))
     fade_surface.fill((0, 0, 0))
     
     # Fade in dari hitam
     for alpha in range(255, 0, -5):
         # Semi-transparan background
-        bg_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+        bg_surface = pygame.Surface((sw, sh), pygame.SRCALPHA)
         bg_surface.fill((0, 0, 20, 160))
         screen.blit(bg_surface, (0, 0))
         
@@ -354,8 +363,8 @@ def show_victory_screen(screen, score, time_played, sound_manager=None, victory_
         for p in particles:
             p['y'] -= p['speed']
             if p['y'] < -10:
-                p['y'] = HEIGHT + 10
-                p['x'] = random.randint(0, WIDTH)
+                p['y'] = sh + 10
+                p['x'] = random.randint(0, sw)
             
             pygame.draw.circle(
                 screen,
@@ -384,9 +393,9 @@ def show_victory_screen(screen, score, time_played, sound_manager=None, victory_
         # Check if return signal was set
         if return_signal[0]:
             break
-            
+        
         # Semi-transparan background
-        bg_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+        bg_surface = pygame.Surface((sw, sh), pygame.SRCALPHA)
         bg_surface.fill((0, 0, 20, 160))
         screen.blit(bg_surface, (0, 0))
         
@@ -394,8 +403,8 @@ def show_victory_screen(screen, score, time_played, sound_manager=None, victory_
         for p in particles:
             p['y'] -= p['speed']
             if p['y'] < -10:
-                p['y'] = HEIGHT + 10
-                p['x'] = random.randint(0, WIDTH)
+                p['y'] = sh + 10
+                p['x'] = random.randint(0, sw)
             
             pygame.draw.circle(
                 screen,
