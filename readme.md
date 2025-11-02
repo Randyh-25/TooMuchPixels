@@ -5,27 +5,27 @@
 [![Pygame](https://img.shields.io/badge/Pygame-Latest-green.svg)](https://www.pygame.org/)
 [![Version](https://img.shields.io/badge/Version-1.0-orange.svg)]()
 
-<img src="https://raw.githubusercontent.com/Randyh-25/TooMuchPixels/refs/heads/main/img/TooMuchPixels.png" alt="Too Many Pixels Banner" width="700"/>
+<img src="https://raw.githubusercontent.com/Randyh-25/TooMuchPixels/refs/heads/main/img/TooMuchPixels.png" alt="Too Much Pixels Banner" width="700"/>
 
 </div>
 
-## 📖 Deskripsi Proyek
+## 📖 Project Description
 
-**Too Much Pixels** adalah game survival shooter 2D berbasis Python dan Pygame. Pemain mengendalikan karakter pixel art di dunia gurun, bertahan dari gelombang musuh, mengumpulkan XP, uang, dan melakukan upgrade. Game ini mendukung mode solo dan co-op split-screen, serta menghadirkan berbagai fitur seperti partner AI, boss battle, efek partikel, dan sistem ekonomi dalam game.
+**Too Much Pixels** is a 2D survival shooter built with Python and Pygame. You control a pixel-art character in a desert world, surviving waves of enemies, collecting XP and money, and upgrading your abilities. The game supports both solo and split-screen co-op modes and features partner AI, boss battles, particle effects, and an in-game economy system.
 
 ---
 
-## 📦 Dependensi Paket
+## 📦 Dependencies
 
-Aplikasi ini membutuhkan beberapa library berikut untuk dijalankan:
+This application requires the following libraries:
 
-- **Python 3.x**
-- **pygame** (engine utama game dan rendering)
-- **pygame_menu** (untuk sistem menu dan GUI)
-- (Opsional) **numpy** (untuk beberapa operasi matematis, jika digunakan)
-- (Opsional) **soundfile** atau library audio lain jika ada fitur tambahan
+- **Python 3.x** (tested with 3.12)
+- **pygame** (core game engine and rendering)
+- **pygame_menu** (menus and GUI)
+- (Optional) **numpy** (for certain math operations, if used)
+- (Optional) **soundfile** or another audio library if additional audio features are enabled
 
-Instalasi dapat dilakukan dengan:
+Install them with:
 
 ```bash
 pip install -r requirements.txt
@@ -33,115 +33,64 @@ pip install -r requirements.txt
 
 ---
 
-## ▶️ Cara Menjalankan Aplikasi & Cara Bermain
+## ▶️ How to Run & How to Play
 
-### Menjalankan Game
+### Run the Game
 
-#### Opsi 1: Download EXE (Khusus Windows)
+#### Option 1: Download EXE (Windows Only)
 
-1. **Download versi EXE dari [Releases](https://github.com/Randyh-25/TooMuchPixels/releases)**
-2. **Extract file ZIP yang didownload**
-3. **Jalankan `TooMuchPixels.exe`**
+1. Download the EXE from the [Releases](https://github.com/Randyh-25/TooMuchPixels/releases)
+2. Extract the downloaded ZIP
+3. Run `TooMuchPixels.exe`
 
-#### Opsi 2: Dari Source Code
+#### Option 2: From Source Code
 
-1. **Clone repository:**
+1. Clone the repository:
     ```bash
-    git clone https://github.com/yourusername/TooMuchPixels.git
+    git clone https://github.com/Randyh-25/TooMuchPixels.git
     cd TooMuchPixels
     ```
-2. **Install dependensi:**
+2. Install dependencies:
     ```bash
     pip install -r requirements.txt
     ```
-3. **Jalankan game:**
+3. Start the game:
     ```bash
     python main.py
     ```
 
-### Cara Bermain
+### How to Play
 
-- **Gerakkan karakter:** `WASD` atau `Arrow Keys`
-- **Skill spesial:** `1` `2` `3`
-- **Pause/Menu:** `ESC`
-- **Cheat Console:** `` ` `` (backtick)
-- **Co-op:** Pilih mode split-screen di menu utama
+- Move: `WASD` or `Arrow Keys`
+- Special skills: `1` `2` `3`
+- Pause/Menu: `ESC`
+- Cheat Console: `` ` `` (backtick)
+- Co-op: Choose split-screen mode in the main menu
 
-Kalahkan musuh, kumpulkan XP dan uang, lakukan upgrade, dan bertahan selama mungkin!
+Defeat enemies, gather XP and money, upgrade your build, and survive as long as possible!
 
 ---
 
 ## 📊 UML Class Diagram
 
-Berikut adalah gambaran sederhana UML class diagram untuk proyek ini:
+Below is a simplified UML class diagram for this project:
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/Randyh-25/TooMuchPixels/refs/heads/main/img/UML%20TooMuchPixels.drawio.png" alt="UML Class Diagram Too Many Pixels" width="700"/>
+  <img src="https://raw.githubusercontent.com/Randyh-25/TooMuchPixels/refs/heads/main/img/UML%20TooMuchPixels.drawio.png" alt="UML Class Diagram Too Much Pixels" width="700"/>
 </div>
 
 ---
 
-## 👥 Kontributor Pengembangan
-
-<div align="center">
-<table>
-  <tr>
-    <td align="center">
-      <a href="https://github.com/Randyh-25">
-        <img src="https://github.com/Randyh-25.png" width="100px;" alt="Randy Hendriyawan"/>
-        <br />
-        <sub><b>Randy Hendriyawan</b></sub>
-      </a>
-      <br />
-      <sub>Game loop utama, main.py, settings.py, sound_manager.py, solo.py, coop.py</sub>
-    </td>
-    <td align="center">
-      <a href="https://github.com/MuhammadRiveldo">
-        <img src="https://github.com/MuhammadRiveldo.png" width="100px;" alt="M. Riveldo Hermawan P."/>
-        <br />
-        <sub><b>M. Riveldo Hermawan P.</b></sub>
-      </a>
-      <br />
-      <sub>Entitas Player dan fungsinya, Player.py, Player2.py, partner.py, Player_animations.py</sub>
-    </td>
-    <td align="center">
-      <a href="https://github.com/03-123140042-olaanggelarosita">
-        <img src="https://github.com/03-123140042-olaanggelarosita.png" width="100px;" alt="Ola Anggela Rosita"/>
-        <br />
-        <sub><b>Ola Anggela Rosita</b></sub>
-      </a>
-      <br />
-      <sub>Entitas pendukung gameplay, enemy.py, Bi_enemy.py, gollux.py, devil.py</sub>
-    </td>
-  </tr>
-  <tr>
-    <td align="center">
-      <a href="https://github.com/Scorlines">
-        <img src="https://github.com/Scorlines.png" width="100px;" alt="Muhammad Fadhel"/>
-        <br />
-        <sub><b>Muhammad Fadhel</b></sub>
-      </a>
-      <br />
-      <sub>Fungsi skill dan draw map, projectile.py, Bi_projectile.py, skill.py, experience.py, maps.py</sub>
-    </td>
-  </tr>
-</table>
-</div>
-
----
-
-## 📚 Referensi
+## 📚 References
 
 - [Pygame Documentation](https://www.pygame.org/docs/)
 - [Pygame Menu](https://pygame-menu.readthedocs.io/)
 - [Python Official Documentation](https://docs.python.org/3/)
 - [Pixel Art Tutorials](https://lospec.com/)
-- Sumber asset dan audio bebas hak cipta dari [OpenGameArt](https://opengameart.org/) dan [Itch.io](https://itch.io/)
+- Assets and audio sources are copyright-free from [OpenGameArt](https://opengameart.org/) and [Itch.io](https://itch.io/)
 
 ---
 
 <div align="center">
   <i>Made with ❤️ and a lot of pixels</i>
 </div>
-
-

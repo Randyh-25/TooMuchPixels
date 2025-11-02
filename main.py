@@ -412,23 +412,55 @@ def settings_menu():
         VOLUME = value
         sound_manager.set_volume(value)
 
-    # Section titles with decorative elements
-    menu.add.label('• DISPLAY SETTINGS •', font_size=28, font_color=(255, 215, 0))
-    menu.add.vertical_margin(10)
+    # Bungkus konten dalam panel semi-transparan agar tidak "nabrak" background
+    panel_w = min(900, sw - 120)
+    panel_h = 420  # relax, konten bisa melebihi
+    content = menu.add.frame_v(panel_w, panel_h, background_color=(10, 10, 15, 200),
+                               border_width=2, border_color=(255, 215, 0))
+    content._relax = True
+    content._pack_margin_warning = False
+
+    # DISPLAY section
+    lbl_display = menu.add.label('• DISPLAY SETTINGS •', font_size=28, font_color=(255, 215, 0))
+    lbl_display.set_margin(0, 0)
+    content.pack(lbl_display, align=pygame_menu.locals.ALIGN_CENTER)
+
+    vm1 = menu.add.vertical_margin(10)
+    vm1.set_margin(0, 0)
+    content.pack(vm1)
+
     resolution_selector = menu.add.selector('Windowed Resolution: ', RESOLUTIONS, onchange=change_resolution,
                                          font_size=28, selection_color=(255, 255, 150))
-    # Fullscreen is disabled; no toggle
-    
-    menu.add.vertical_margin(30)
-    menu.add.label('• AUDIO SETTINGS •', font_size=28, font_color=(255, 215, 0))
-    menu.add.vertical_margin(10)
-    menu.add.range_slider('Master Volume: ', default=VOLUME, range_values=(0, 100), 
+    resolution_selector.set_margin(0, 0)
+    content.pack(resolution_selector, align=pygame_menu.locals.ALIGN_CENTER)
+
+    vm2 = menu.add.vertical_margin(20)
+    vm2.set_margin(0, 0)
+    content.pack(vm2)
+
+    # AUDIO section
+    lbl_audio = menu.add.label('• AUDIO SETTINGS •', font_size=28, font_color=(255, 215, 0))
+    lbl_audio.set_margin(0, 0)
+    content.pack(lbl_audio, align=pygame_menu.locals.ALIGN_CENTER)
+
+    vm3 = menu.add.vertical_margin(10)
+    vm3.set_margin(0, 0)
+    content.pack(vm3)
+
+    vol = menu.add.range_slider('Master Volume: ', default=VOLUME, range_values=(0, 100), 
                        increment=5, onchange=change_volume,
                        font_size=28, slider_color=(255, 215, 0))
-                       
-    menu.add.vertical_margin(30)
-    menu.add.button('Back to Main Menu', main_menu, font_size=32, 
+    vol.set_margin(0, 0)
+    content.pack(vol, align=pygame_menu.locals.ALIGN_CENTER)
+
+    vm4 = menu.add.vertical_margin(20)
+    vm4.set_margin(0, 0)
+    content.pack(vm4)
+
+    btn_back = menu.add.button('Back to Main Menu', main_menu, font_size=32, 
                   background_color=(40, 40, 60))
+    btn_back.set_margin(0, 0)
+    content.pack(btn_back, align=pygame_menu.locals.ALIGN_CENTER)
     
     # Create dynamic background with particles during menu loop
     while menu.is_enabled():
